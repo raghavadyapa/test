@@ -256,7 +256,7 @@ public class tifConverter1 {
                     //ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     String tif_path = p.toString();
                     String png_path = tif_path.replaceAll(".TIF", ".png");
-                    WritableByteChannel wri_png = u.create(GcsPath.fromUri(png_path), "image/png");
+                    WritableByteChannel wri_png = u.create(GcsPath.fromUri(this.destinationLocation.get()+name.getName()), "image/png");
                     OutputStream os_png = Channels.newOutputStream(wri_png);
 
                     ImageIO.write(tiff, "png", os_png);
