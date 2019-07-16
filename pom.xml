@@ -140,11 +140,7 @@
             <artifactId>beam-vendor-guava-20_0</artifactId>
             <version>${beam-vendor-guava.version}</version>
         </dependency>
-        <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-            <version>1.2</version>
-        </dependency>
+      
 
         <!-- Test -->
         <dependency>
