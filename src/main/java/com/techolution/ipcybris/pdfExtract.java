@@ -130,12 +130,12 @@ public class pdfExtract {
     @Validation.Required
     ValueProvider<String> getInputFilePattern();
 
-   // void setInputFilePattern(ValueProvider<String> value);
+    void setInputFilePattern(ValueProvider<String> value);
 
     @Description("The output location to write to (e.g. gs://bucket-name/decompressed)")
     @Validation.Required
     ValueProvider<String> getOutputDirectory();
-  //  void setOutputDirectory(ValueProvider<String> value);
+    void setOutputDirectory(ValueProvider<String> value);
 
   }
 
