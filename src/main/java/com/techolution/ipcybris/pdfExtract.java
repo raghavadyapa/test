@@ -223,7 +223,9 @@ public class pdfExtract {
                 os.write(buffer, 0, len);
               }
               os.close();
+                 LOG.info("written pdf"+ze.getName());
               filesUnzipped++;
+              LOG.info("files unzipped"+filesUnzipped);
             }
             ze = zis.getNextEntry();
           }
@@ -250,7 +252,9 @@ public class pdfExtract {
                 os.write(buffer,0,len);
               }
               os.close();
+                LOG.info("written pdf"+te.getName());
               filesUnzipped++;
+              LOG.info("files unzipped"+filesUnzipped);
             }
             te=tis.getNextTarEntry();
           }
