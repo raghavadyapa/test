@@ -32,8 +32,9 @@ import org.apache.beam.sdk.values.TupleTag;
 import org.apache.commons.io.FilenameUtils;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+//import org.apache.commons.logging.Log;
+//import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 /**
  * This pipeline decompresses file(s) from Google Cloud Storage and re-uploads them to a destination
  * location.
@@ -192,8 +193,8 @@ public class pdfExtract {
       this.destinationLocation = destinationLocation;
     }
     //private static final Logger LOG = LoggerFactory.getLogger(pdfExtract.class);
-        private static final Log LOG=LogFactory.getLog(pdfExtract.class);
-
+       // private static final Logger LOG=Logger.getLogger(pdfExtract.class);
+        private static final Logger LOG= Logger.getLogger(pdfExtract.class);
     @ProcessElement
     public void processElement(ProcessContext c){
       ResourceId p = c.element().resourceId();
