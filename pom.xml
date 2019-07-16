@@ -115,11 +115,6 @@
             <version>${beam.version}</version>
         </dependency>
         <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-            <version>1.2</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-extensions-protobuf</artifactId>
             <version>${beam.version}</version>
@@ -144,6 +139,11 @@
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-vendor-guava-20_0</artifactId>
             <version>${beam-vendor-guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.2</version>
         </dependency>
 
         <!-- Test -->
@@ -244,6 +244,7 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
+                    <version>1.7.25</version>
                 </exclusion>
             </exclusions>
         </dependency>
