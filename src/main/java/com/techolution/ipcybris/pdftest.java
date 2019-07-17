@@ -91,7 +91,7 @@ import org.slf4j.Logger;
  * --outputFailureFile=gs://${PROJECT_ID}/decompressed-dir/failed.csv"
  * </pre>
  */
-public class pdfExtract {
+public class pdftest {
 
   /** The logger to output status messages to. */
 //    private static final Logger LOG = LoggerFactory.getLogger(UnzipParent.class);
@@ -194,7 +194,7 @@ public class pdfExtract {
     DecompressNew(ValueProvider<String> destinationLocation) {
       this.destinationLocation = destinationLocation;
     }
-    private static final Logger LOG = LoggerFactory.getLogger(pdfExtract.class);
+    private static final Logger LOG = LoggerFactory.getLogger(pdftest.class);
     @ProcessElement
     public void processElement(ProcessContext c){
       ResourceId p = c.element().resourceId();
