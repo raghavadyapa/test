@@ -1,4 +1,3 @@
-
 package com.techolution.ipcybris;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -229,7 +228,7 @@ public class tifConverter3 {
         String ext = FilenameUtils.getExtension(p.toString());
         //File file = new File(p.toString());
         //File[] f = file.listFiles();
-        if (ext.equalsIgnoreCase("TIF")) {
+        if (ext.equalsIgnoreCase(".TIF")) {
 
           String name=FilenameUtils.getName(p.toString());
           InputStream is;
@@ -257,6 +256,7 @@ public class tifConverter3 {
 //                  InputStream in=new ByteArrayInputStream(baos.toByteArray());
 //                  String tif_path = p.toString();
 //                  String png_path = tif_path.replaceAll(".TIF", ".png");
+
                   WritableByteChannel wri_png = u.create(GcsPath.fromUri(this.destinationLocation.get() + name), "image/png");
                   OutputStream os_png = Channels.newOutputStream(wri_png);
 //                  int len;
