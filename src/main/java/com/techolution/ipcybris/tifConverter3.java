@@ -99,7 +99,7 @@ import java.util.stream.Stream;
  * --outputFailureFile=gs://${PROJECT_ID}/decompressed-dir/failed.csv"
  * </pre>
  */
-public class tifConverter {
+public class tifConverter3 {
 
   /** The logger to output status messages to. */
 //    private static final Logger LOG = LoggerFactory.getLogger(UnzipNested.class);
