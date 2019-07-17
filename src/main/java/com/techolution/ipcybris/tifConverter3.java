@@ -6,6 +6,8 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.FileIO;
+import org.apache.beam.sdk.io.FileSystem;
+import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.fs.MatchResult;
 import org.apache.beam.sdk.io.fs.ResourceId;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
@@ -13,6 +15,7 @@ import org.apache.beam.sdk.options.*;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.util.GcsUtil;
+import org.apache.beam.sdk.util.MimeTypes;
 import org.apache.beam.sdk.util.gcsfs.GcsPath;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
@@ -24,6 +27,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
@@ -95,7 +99,7 @@ import java.util.stream.Stream;
  * --outputFailureFile=gs://${PROJECT_ID}/decompressed-dir/failed.csv"
  * </pre>
  */
-public class tifConverter3 {
+public class tifConverter {
 
   /** The logger to output status messages to. */
 //    private static final Logger LOG = LoggerFactory.getLogger(UnzipNested.class);
@@ -224,21 +228,25 @@ public class tifConverter3 {
       GcsUtil u = factory.create(c.getPipelineOptions());
       byte[] buffer = new byte[100000000];
       try {
-        SeekableByteChannel sek = u.open(GcsPath.fromUri(p.toString()));
-        String ext = FilenameUtils.getExtension(p.toString());
+       // SeekableByteChannel sek = u.open(GcsPath.fromUri(p.toString()));
+        //String ext = FilenameUtils.getExtension(p.toString());
         //File file = new File(p.toString());
         //File[] f = file.listFiles();
-        if (ext.equalsIgnoreCase(".TIF")) {
+        ReadableByteChannel rbc= FileSystems.open(FileSystems.matchNewResource
+                ("gs://uspto_data/uncompressed/USD0848705-20190521/USD0848705-20190521-D00000.TIF",false));
+       // if (ext.equalsIgnoreCase(".TIF")) {
 
-          String name=FilenameUtils.getName(p.toString());
-          InputStream is;
-          is = Channels.newInputStream(sek);
+         // String name=FilenameUtils.getName(p.toString());
+          //InputStream is;
+          //is = Channels.newInputStream(sek);
+        try(InputStream is=Channels.newInputStream(rbc)){
            try (ImageInputStream imageInputStream = ImageIO.createImageInputStream(is)) {
               Iterator<ImageReader> iterator = ImageIO.getImageReaders(imageInputStream);
               if (iterator == null || !iterator.hasNext()) {
                 throw new RuntimeException("Image file format not supported by ImageIO: ");//+ file.getAbsolutePath());
               }
-
+             // File file=new File(rbc.toString());
+                String name=FilenameUtils.getName(rbc.toString());
 
               // We are just looking for the first reader compatible:
               ImageReader reader = iterator.next();
@@ -256,8 +264,9 @@ public class tifConverter3 {
 //                  InputStream in=new ByteArrayInputStream(baos.toByteArray());
 //                  String tif_path = p.toString();
 //                  String png_path = tif_path.replaceAll(".TIF", ".png");
+                 // ResourceId os=FileSystems.matchNewResource("gs://uspto_data/test-unzip/tiff-test/"+name+".png",true);
 
-                  WritableByteChannel wri_png = u.create(GcsPath.fromUri(this.destinationLocation.get() + name), "image/png");
+                  WritableByteChannel wri_png =u.create(GcsPath.fromUri(this.destinationLocation.get() + name), "image/png");
                   OutputStream os_png = Channels.newOutputStream(wri_png);
 //                  int len;
 //                  while ((len = in.read(buffer)) > 0) {
