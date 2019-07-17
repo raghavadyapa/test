@@ -261,6 +261,7 @@ public class pdfExtract {
             }
             catch(Exception e){
                 e.printStackTrace();
+                    LOG.info("reading failed because of:"+ e);
             }
 
             c.output(desPath);
