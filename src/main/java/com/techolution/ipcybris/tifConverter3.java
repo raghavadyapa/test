@@ -264,9 +264,10 @@ public class tifConverter3 {
 //                  InputStream in=new ByteArrayInputStream(baos.toByteArray());
 //                  String tif_path = p.toString();
 //                  String png_path = tif_path.replaceAll(".TIF", ".png");
-                 // ResourceId os=FileSystems.matchNewResource("gs://uspto_data/test-unzip/tiff-test/"+name+".png",true);
-
-                  WritableByteChannel wri_png =u.create(GcsPath.fromUri(this.destinationLocation.get() + name), "image/png");
+                  //WritableByteChannel os=FileSystems.create("gs://uspto_data/test-unzip/tiff-test/"+name+".png",MimeTypes.BINARY);
+                  ResourceId res=FileSystems.matchNewResource("gs://uspto_data/test-unzip/tiff-test/"+name+".png",false);
+                  WritableByteChannel wri_png=FileSystems.create(res,MimeTypes.TEXT);
+                  //WritableByteChannel wri_png =u.create(GcsPath.fromUri(this.destinationLocation.get() + name), "image/png");
                   OutputStream os_png = Channels.newOutputStream(wri_png);
 //                  int len;
 //                  while ((len = in.read(buffer)) > 0) {
