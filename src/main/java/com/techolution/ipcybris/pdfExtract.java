@@ -29,8 +29,10 @@ package com.techolution.ipcybris;
         import org.apache.beam.sdk.values.KV;
         import org.apache.beam.sdk.values.TupleTag;
         import org.apache.commons.io.FilenameUtils;
-        import org.slf4j.LoggerFactory;
-        import org.slf4j.Logger;
+        //import org.slf4j.LoggerFactory;
+        //import org.slf4j.Logger;
+        import org.apache.logging.log4j.LogManager;
+        import org.apache.logging.log4j.Logger;
 
 /**
  * This pipeline decompresses file(s) from Google Cloud Storage and re-uploads them to a destination
@@ -189,7 +191,7 @@ public class pdfExtract {
         DecompressNew(ValueProvider<String> destinationLocation) {
             this.destinationLocation = destinationLocation;
         }
-    private static final Logger LOG = LoggerFactory.getLogger(pdfExtract.class);
+    private static final Logger LOG = LogManager.getLogger(pdfExtract.class);
 
         @ProcessElement
         public void processElement(ProcessContext c){
