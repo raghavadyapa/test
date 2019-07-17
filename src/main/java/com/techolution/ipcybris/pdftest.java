@@ -18,6 +18,7 @@ import org.apache.beam.repackaged.beam_sdks_java_core.org.apache.commons.compres
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
+import org.apache.beam.sdk.io.FileBasedSink;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.fs.MatchResult;
@@ -29,6 +30,7 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.util.GcsUtil;
 import org.apache.beam.sdk.util.gcsfs.GcsPath;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.LoggerFactory;
@@ -89,7 +91,7 @@ import org.slf4j.Logger;
  * --outputFailureFile=gs://${PROJECT_ID}/decompressed-dir/failed.csv"
  * </pre>
  */
-public class pdftest {
+public class pdfExtract {
 
   /** The logger to output status messages to. */
 //    private static final Logger LOG = LoggerFactory.getLogger(UnzipParent.class);
@@ -169,9 +171,9 @@ public class pdftest {
     Pipeline pipeline = Pipeline.create(options);
     ValueProvider output=options.getOutputDirectory();
     // Run the pipeline over the work items.
-    pipeline.apply("MatchFile(s)", FileIO.match().filepattern(options.getInputFilePattern()))
-            .apply("DecompressFile(s)", ParDo.of(new DecompressNew(options.getOutputDirectory())))
-              .apply(FileIO.write().to(output).withNumShards(5000));
+   PCollection input= pipeline.apply("MatchFile(s)", FileIO.match().filepattern(options.getInputFilePattern()))
+            .apply("DecompressFile(s)",ParDo.of((new DecompressNew(options.getOutputDirectory()))));
+             input.apply(FileIO.write().to(output).withNumShards(5000));
  //   .apply(FileIO.write();
 //              .apply(FileIO.write().to());
 
@@ -192,7 +194,7 @@ public class pdftest {
     DecompressNew(ValueProvider<String> destinationLocation) {
       this.destinationLocation = destinationLocation;
     }
-    private static final Logger LOG = LoggerFactory.getLogger(pdftest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(pdfExtract.class);
     @ProcessElement
     public void processElement(ProcessContext c){
       ResourceId p = c.element().resourceId();
