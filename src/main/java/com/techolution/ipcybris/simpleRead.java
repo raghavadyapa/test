@@ -1,14 +1,11 @@
 package com.techolution.ipcybris;
 
-import com.google.cloud.dataflow.sdk.transforms.DoFn;
-import com.google.cloud.dataflow.sdk.transforms.ParDo;
+
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.options.*;
 
-import java.io.File;
-import java.util.regex.MatchResult;
 
 
 public class simpleRead {
