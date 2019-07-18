@@ -17,6 +17,8 @@ public class simpleRead {
 
     p.apply(TextIO.read().from("gs://uspto_data/text-1.txt"))
                         .apply(TextIO.write().to("gs://uspto_data/text-2.txt"));
+        p.run(options);
+
   }
 
 
