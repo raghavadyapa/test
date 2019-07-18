@@ -15,8 +15,8 @@ public class simpleRead {
     PipelineOptions options=PipelineOptionsFactory.create();
     Pipeline p=Pipeline.create(options);
 
-    p.apply(TextIO.read().from("gs://uspto_data/text-1.txt"))
-                        .apply(TextIO.write().to("gs://uspto_data/text-2.txt"));
+    p.apply(TextIO.read().from("gs://uspto_data/RE.zip"))
+                        .apply(TextIO.write().to("gs://uspto_data/RE2/"));
         p.run(options);
 
   }
