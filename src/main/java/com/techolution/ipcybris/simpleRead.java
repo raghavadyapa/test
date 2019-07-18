@@ -1,13 +1,15 @@
 package com.techolution.ipcybris;
 
-import org.apache.beam.runners.dataflow.DataflowPipelineRegistrar;
+import com.google.cloud.dataflow.sdk.transforms.DoFn;
+import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.FileIO;
-import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.*;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.runners.dataflow.TestDataflowPipelineOptions;
+
+import java.io.File;
+import java.util.regex.MatchResult;
+
 
 public class simpleRead {
 
@@ -40,9 +42,10 @@ public class simpleRead {
 
   public static PipelineResult run(Options options){
     Pipeline p=Pipeline.create(options);
-    p.apply(TextIO.read().from(options.getInputFilePattern()))
-            .apply(TextIO.write().to(options.getOutputDirectory()));
-    
+    ValueProvider output=options.getOutputDirectory();
+    p.apply(FileIO.match().filepattern(options.getInputFilePattern()))
+            .apply(FileIO.write().to(output));
+
     return p.run();
   }
 }
