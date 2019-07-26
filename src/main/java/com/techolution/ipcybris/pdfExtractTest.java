@@ -210,7 +210,12 @@ public class pdfExtractTest {
             if(ze.getName().toLowerCase().contains(".pdf")) {
               String tn = ze.getName();
               String[] tna = tn.split("/");
-              GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+tna[0]+"/");               
+              //GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+tna[0]+"/");         
+               String fname=p.toString();
+              String[] week1=fname.split("/");
+              String year=week1[week1.length-1].substring(0,3);
+              GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+year+"/"+week1[week1.length-1]+"/");
+              
               String pdf_name = tna[tna.length - 1];
               WritableByteChannel wri = u.create(GcsPath.fromUri(week+pdf_name), getType(ze.getName()));
               OutputStream os = Channels.newOutputStream(wri);
