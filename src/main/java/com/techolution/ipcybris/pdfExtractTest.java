@@ -213,9 +213,9 @@ public class pdfExtractTest {
               //GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+tna[0]+"/");         
                String fname=p.toString();
               String[] zipName=fname.split("/");
-              String[] week=zipName[zipName.length-1].split("_");
-              String year=week[week.length-1].substring(0,3);
-              GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+year+"/"+week[week.length-1]+"/");
+              String[] week1=zipName[zipName.length-1].split("_");
+              String year=week1[week1.length-1].substring(0,3);
+              GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+year+"/"+week1[week1.length-1]+"/");
               
               String pdf_name = tna[tna.length - 1];
               WritableByteChannel wri = u.create(GcsPath.fromUri(week+pdf_name), getType(ze.getName()));
