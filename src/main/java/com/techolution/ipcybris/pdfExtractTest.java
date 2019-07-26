@@ -29,6 +29,8 @@ import org.apache.beam.sdk.util.gcsfs.GcsPath;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This pipeline decompresses file(s) from Google Cloud Storage and re-uploads them to a destination
@@ -181,7 +183,7 @@ public class pdfExtractTest {
   public static class DecompressNew extends DoFn<MatchResult.Metadata,String> {
     private static final long serialVersionUID = 2015166770614756341L;
     private long filesUnzipped=0;
-
+    private static final Logger log=LoggerFactory.getLogger(pdfExtractTest.class);
     private final ValueProvider<String> destinationLocation;
 
     DecompressNew(ValueProvider<String> destinationLocation) {
@@ -200,6 +202,7 @@ public class pdfExtractTest {
         SeekableByteChannel sek = u.open(GcsPath.fromUri(p.toString()));
         String ext = FilenameUtils.getExtension(p.toString());
         if (ext.equalsIgnoreCase("zip") ) {
+          log.info("decompressing "+p.toString());
           desPath = this.destinationLocation.get()+ randomStr +"-unzip/";
           InputStream is;
           is = Channels.newInputStream(sek);
@@ -208,6 +211,7 @@ public class pdfExtractTest {
           ZipEntry ze = zis.getNextEntry();
           while(ze!=null){
             if(ze.getName().toLowerCase().contains(".pdf")) {
+              log.info("extracting "+ze.getName());
               String tn = ze.getName();
               String[] tna = tn.split("/");
               //GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+tna[0]+"/");         
@@ -219,6 +223,7 @@ public class pdfExtractTest {
               
               String pdf_name = tna[tna.length - 1];
               WritableByteChannel wri = u.create(GcsPath.fromUri(week+pdf_name), getType(ze.getName()));
+              log.info("writing to GCS");
               OutputStream os = Channels.newOutputStream(wri);
               int len;
               while ((len = zis.read(buffer)) > 0) {
@@ -226,12 +231,14 @@ public class pdfExtractTest {
               }
               os.close();
               filesUnzipped++;
+              log.info("unzipped "+filesUnzipped);
             }
             ze = zis.getNextEntry();
           }
           zis.closeEntry();
           zis.close();
         } else if(ext.equalsIgnoreCase("tar")) {
+          log.info("decompressing "+p.toString());
           desPath = this.destinationLocation.get()+ randomStr + "-untar/";
           InputStream is;
           is = Channels.newInputStream(sek);
@@ -240,11 +247,13 @@ public class pdfExtractTest {
           TarArchiveEntry te = tis.getNextTarEntry();
           while(te!=null){
             if(te.getName().toLowerCase().contains(".pdf")) {
+              log.info("extracting "+te.getName());
               String tn = te.getName();
               String[] tna = tn.split("/");
               GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+tna[0]+"/");  
               String pdf_name = tna[tna.length-1];
               WritableByteChannel wri = u.create(GcsPath.fromUri(week+pdf_name), getType(te.getName()));
+              log.info("writing to GCS");
               OutputStream os = Channels.newOutputStream(wri);
               int len;
               while((len=tis.read(buffer))>0){
@@ -252,14 +261,17 @@ public class pdfExtractTest {
               }
               os.close();
               filesUnzipped++;
+              log.info("unzipped "+filesUnzipped);
             }
             te=tis.getNextTarEntry();
           }
           tis.close();
+          
         }
       }
       catch(Exception e){
         e.printStackTrace();
+        log.error("Error:",e);
       }
 
       c.output(desPath);
