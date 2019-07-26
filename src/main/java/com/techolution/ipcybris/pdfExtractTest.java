@@ -211,7 +211,7 @@ public class pdfExtractTest {
               String tn = ze.getName();
               String[] tna = tn.split("/");
               String pdf_name = tna[tna.length - 1];
-              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() +ze.getName()+ pdf_name), getType(ze.getName()));
+              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get()+ pdf_name), getType(ze.getName()));
               OutputStream os = Channels.newOutputStream(wri);
               int len;
               while ((len = zis.read(buffer)) > 0) {
