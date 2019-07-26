@@ -222,7 +222,7 @@ public class LogTest {
               String year=week1[week1.length-1].substring(0,4);
               GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+year+"/"+week1[week1.length-1].substring(0,8)+"/");
               String pdf_name = tna[tna.length - 1];
-              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get()+week+pdf_name), getType(ze.getName()));
+              WritableByteChannel wri = u.create(GcsPath.fromUri(week+pdf_name), getType(ze.getName()));
               log.info("writing to GCS");
               OutputStream os = Channels.newOutputStream(wri);
               int len;
@@ -257,7 +257,7 @@ public class LogTest {
               String year=week1[week1.length-1].substring(0,4);
               GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+year+"/"+week1[week1.length-1].substring(0,8)+"/");
               String pdf_name = tna[tna.length-1];
-              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get()+ pdf_name), getType(te.getName()));
+              WritableByteChannel wri = u.create(GcsPath.fromUri(week+pdf_name), getType(te.getName()));
               log.info("writing to GCS");
               OutputStream os = Channels.newOutputStream(wri);
               int len;
