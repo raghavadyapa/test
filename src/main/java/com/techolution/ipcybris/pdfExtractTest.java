@@ -210,8 +210,9 @@ public class pdfExtractTest {
             if(ze.getName().toLowerCase().contains(".pdf")) {
               String tn = ze.getName();
               String[] tna = tn.split("/");
+              String week=tna[0];
               String pdf_name = tna[tna.length - 1];
-              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get()+ pdf_name), getType(ze.getName()));
+              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get()+week+pdf_name), getType(ze.getName()));
               OutputStream os = Channels.newOutputStream(wri);
               int len;
               while ((len = zis.read(buffer)) > 0) {
@@ -235,8 +236,9 @@ public class pdfExtractTest {
             if(te.getName().toLowerCase().contains(".pdf")) {
               String tn = te.getName();
               String[] tna = tn.split("/");
+              String week=tna[0];
               String pdf_name = tna[tna.length-1];
-              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(te.getName()));
+              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get()+week+ pdf_name), getType(te.getName()));
               OutputStream os = Channels.newOutputStream(wri);
               int len;
               while((len=tis.read(buffer))>0){
