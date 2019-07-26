@@ -250,7 +250,13 @@ public class pdfExtractTest {
               log.info("extracting "+te.getName());
               String tn = te.getName();
               String[] tna = tn.split("/");
-              GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+tna[0]+"/");  
+              
+              String fname=p.toString();
+              String[] zipName=fname.split("/");
+              String[] week1=zipName[zipName.length-1].split("_");
+              String year=week1[week1.length-1].substring(0,4);
+              GcsPath week= GcsPath.fromUri(this.destinationLocation.get()+year+"/"+week1[week1.length-1].substring(0,8)+"/");
+              
               String pdf_name = tna[tna.length-1];
               WritableByteChannel wri = u.create(GcsPath.fromUri(week+pdf_name), getType(te.getName()));
               log.info("writing to GCS");
