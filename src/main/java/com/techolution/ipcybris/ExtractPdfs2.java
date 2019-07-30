@@ -227,6 +227,7 @@ public class ExtractPdfs2 {
                   while ((len = zis.read(buffer)) > 0) {
                     os.write(buffer, 0, len);
                     log.info("writing to GCS");
+                    finished=true;
                   }
                 } catch (Exception e) {
                   e.printStackTrace();
@@ -266,6 +267,7 @@ public class ExtractPdfs2 {
                   while ((len = tis.read(buffer)) > 0) {
                     os.write(buffer, 0, len);
                     log.info("writing to GCS");
+                    finished=true;
                   }
                 } catch (Exception e) {
                   e.printStackTrace();
