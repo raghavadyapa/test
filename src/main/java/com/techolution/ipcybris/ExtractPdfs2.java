@@ -1,5 +1,6 @@
 package com.techolution.ipcybris;
 
+
 import com.google.common.annotations.VisibleForTesting;
 
 import java.io.*;
@@ -191,109 +192,102 @@ public class ExtractPdfs2 {
     }
 
     @ProcessElement
-    public void processElement(ProcessContext c){
+    public void processElement(ProcessContext c) {
       ResourceId p = c.element().resourceId();
       GcsUtil.GcsUtilFactory factory = new GcsUtil.GcsUtilFactory();
       GcsUtil u = factory.create(c.getPipelineOptions());
       String desPath = "";
       String randomStr = getRandomString(10);
       byte[] buffer = new byte[100000000];
-      boolean finished=false;
-      int MaxRetry=5;
-      int retryCount=0;
-      try{
-        SeekableByteChannel sek = u.open(GcsPath.fromUri(p.toString()));
-        String ext = FilenameUtils.getExtension(p.toString());
-        if (ext.equalsIgnoreCase("zip")) {
-          log.info("decompressing "+p.toString());
-          desPath = this.destinationLocation.get()+ randomStr +"-unzip/";
-          InputStream is;
-          is = Channels.newInputStream(sek);
-          BufferedInputStream bis = new BufferedInputStream(is);
-          ZipInputStream zis = new ZipInputStream(bis);
-          ZipEntry ze = zis.getNextEntry();
-          while(ze!=null) {
-            if(ze.getName().toLowerCase().contains(".pdf")) {
-              log.info("extracting "+ze.getName());
-              String tn = ze.getName();
-              String[] tna = tn.split("/");
-              String pdf_name = tna[tna.length - 1];
-              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(ze.getName()));
+      boolean gotError = false;
+      int MaxRetry = 5;
+      int retryCount = 0;
+      do {
 
-              OutputStream os = Channels.newOutputStream(wri);
-              int len;
-              while(!finished && retryCount++<MaxRetry ) {
-                try {
-                  while ((len = zis.read(buffer)) > 0) {
-                    os.write(buffer, 0, len);
-                    log.info("writing to GCS");
-                    finished=true;
-                  }
-                } catch (Exception e) {
-                  e.printStackTrace();
-                  log.error("Error while writing:" + ze, e);
-                  log.info("retrying"+ze);
+        try {
+          SeekableByteChannel sek = u.open(GcsPath.fromUri(p.toString()));
+          String ext = FilenameUtils.getExtension(p.toString());
+          if (ext.equalsIgnoreCase("zip")) {
+            log.info("decompressing " + p.toString());
+            desPath = this.destinationLocation.get() + randomStr + "-unzip/";
+            InputStream is;
+            is = Channels.newInputStream(sek);
+            BufferedInputStream bis = new BufferedInputStream(is);
+            ZipInputStream zis = new ZipInputStream(bis);
+            ZipEntry ze = zis.getNextEntry();
+            while (ze != null) {
+              if (ze.getName().toLowerCase().contains(".pdf")) {
+                log.info("extracting " + ze.getName());
+                String tn = ze.getName();
+                String[] tna = tn.split("/");
+                String pdf_name = tna[tna.length - 1];
+                WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(ze.getName()));
+
+                OutputStream os = Channels.newOutputStream(wri);
+                int len;
+
+                while ((len = zis.read(buffer)) > 0) {
+                  os.write(buffer, 0, len);
+                  log.info("writing to GCS");
+
                 }
+                os.close();
+                log.info("unzipped " + ze.getName());
+                filesUnzipped++;
+                log.info("unzipped count" + filesUnzipped);
               }
-              os.close();
-              log.info("unzipped "+ze.getName());
-              filesUnzipped++;
-              log.info("unzipped count"+filesUnzipped);
+              ze = zis.getNextEntry();
             }
-            ze = zis.getNextEntry();
-          }
-          zis.closeEntry();
-          zis.close();
-        } else if(ext.equalsIgnoreCase("tar")) {
-          log.info("decompressing "+p.toString());
-          desPath = this.destinationLocation.get()+ randomStr + "-untar/";
-          InputStream is;
-          is = Channels.newInputStream(sek);
-          BufferedInputStream bis = new BufferedInputStream(is);
-          TarArchiveInputStream tis = new TarArchiveInputStream(bis);
-          TarArchiveEntry te = tis.getNextTarEntry();
-          while(te!=null){
-            if(te.getName().toLowerCase().contains(".pdf")) {
-              log.info("extracting "+te.getName());
-              String tn = te.getName();
-              String[] tna = tn.split("/");
-              String pdf_name = tna[tna.length-1];
-              WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(te.getName()));
-             //log.info("GCS path");
-              OutputStream os = Channels.newOutputStream(wri);
-              int len;
-              while(!finished && retryCount++<MaxRetry ) {
-                try {
-                  while ((len = tis.read(buffer)) > 0) {
-                    os.write(buffer, 0, len);
-                    log.info("writing to GCS");
-                    finished=true;
-                  }
-                } catch (Exception e) {
-                  e.printStackTrace();
-                  log.error("Error while writing:" + te, e);
-                  log.info("retrying"+te);
+            zis.closeEntry();
+            zis.close();
+          } else if (ext.equalsIgnoreCase("tar")) {
+            log.info("decompressing " + p.toString());
+            desPath = this.destinationLocation.get() + randomStr + "-untar/";
+            InputStream is;
+            is = Channels.newInputStream(sek);
+            BufferedInputStream bis = new BufferedInputStream(is);
+            TarArchiveInputStream tis = new TarArchiveInputStream(bis);
+            TarArchiveEntry te = tis.getNextTarEntry();
+            while (te != null) {
+              if (te.getName().toLowerCase().contains(".pdf")) {
+                log.info("extracting " + te.getName());
+                String tn = te.getName();
+                String[] tna = tn.split("/");
+                String pdf_name = tna[tna.length - 1];
+                WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(te.getName()));
+                //log.info("GCS path");
+                OutputStream os = Channels.newOutputStream(wri);
+                int len;
+                while ((len = tis.read(buffer)) > 0) {
+                  os.write(buffer, 0, len);
+                  log.info("writing to GCS");
+                  os.close();
                 }
+                log.info("unzipped " + te.getName());
+                filesUnzipped++;
+                log.info("unzipped count " + filesUnzipped);
               }
-              os.close();
-              log.info("unzipped "+te.getName());
-              filesUnzipped++;
-              log.info("unzipped count "+filesUnzipped);
+              te = tis.getNextTarEntry();
             }
-            te=tis.getNextTarEntry();
+            tis.close();
           }
-          tis.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+          log.error("Error:in decompressing method", e);
+          gotError=true;
+          retryCount++;
+          log.error("retrying "+retryCount+" time");
+          
+
         }
-      }
-      catch(Exception e){
-        e.printStackTrace();
-        log.error("Error while writing:",e);
 
+        c.output(desPath);
       }
+      while (!gotError && retryCount < MaxRetry);
+        
+      
 
-      c.output(desPath);
     }
-
     private String getType(String fName){
       if(fName.endsWith(".zip")){
         return "application/x-zip-compressed";
