@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory;
  * --outputFailureFile=gs://${PROJECT_ID}/decompressed-dir/failed.csv"
  * </pre>
  */
-public class ExtractPdfs {
+public class ExtractPdfsTest {
 
   /** The logger to output status messages to. */
 //    private static final Logger LOG = LoggerFactory.getLogger(UnzipParent.class);
@@ -182,7 +182,7 @@ public class ExtractPdfs {
   @SuppressWarnings("serial")
   public static class DecompressNew extends DoFn<MatchResult.Metadata,String> {
     private static final long serialVersionUID = 2015166770614756341L;
-    private static final Logger log=LoggerFactory.getLogger(ExtractPdfs.class);
+    private static final Logger log=LoggerFactory.getLogger(ExtractPdfsTest.class);
     private long filesUnzipped=0;
 
     private final ValueProvider<String> destinationLocation;
