@@ -88,7 +88,7 @@ import org.slf4j.LoggerFactory;
  * --outputFailureFile=gs://${PROJECT_ID}/decompressed-dir/failed.csv"
  * </pre>
  */
-public class ExtractPdfsTest2 {
+public class ExtractPdfsTest {
 
   /** The logger to output status messages to. */
 //    private static final Logger LOG = LoggerFactory.getLogger(UnzipParent.class);
@@ -189,7 +189,7 @@ public class ExtractPdfsTest2 {
   @SuppressWarnings("serial")
   public static class DecompressNew extends DoFn<MatchResult.Metadata, String> {
     private static final long serialVersionUID = 2015166770614756341L;
-    private static final Logger log = LoggerFactory.getLogger(ExtractPdfsTest2.class);
+    private static final Logger log = LoggerFactory.getLogger(ExtractPdfsTest.class);
     private long filesUnzipped = 0;
 
     private final ValueProvider<String> destinationLocation;
@@ -226,9 +226,12 @@ public class ExtractPdfsTest2 {
         ZipInputStream zis = new ZipInputStream(bis);
         ZipEntry ze = null;
         try {
-          zis.getNextEntry();
+          ze=zis.getNextEntry();
+          log.info("zip entry created"+ze.getName());
+          
         } catch (IOException e) {
           e.printStackTrace();
+          log.error("error creating zip entry:",e);
         }
         while (ze != null) {
           try {
@@ -251,7 +254,7 @@ public class ExtractPdfsTest2 {
             }
           } catch (Exception e) {
             e.printStackTrace();
-            log.error("Error while reading " + ze);
+            log.error("Error while reading " + ze.getName());
           }
 
           filesUnzipped++;
@@ -277,10 +280,10 @@ public class ExtractPdfsTest2 {
         log.info("Tar input stream is created");
         try {
           te = tis.getNextTarEntry();
-          log.info("Next Tar entry is :" + te);
+          log.info("Next Tar entry is :" + te.getName());
         } catch (IOException e) {
           e.printStackTrace();
-          log.error("error while creating TarEntry" + te);
+          log.error("error while creating TarEntry" + te.getName());
         }
         while (te != null) {
           try {
@@ -302,15 +305,15 @@ public class ExtractPdfsTest2 {
               log.info("unzipped count " + filesUnzipped);
             }
             te = tis.getNextTarEntry();
-          } 
+          }
           catch (IOException e) {
             e.printStackTrace();
-            log.error("Error while reading " + te);
+            log.error("Error while reading " + te.getName());
           }
           try {
                tis.close();
              log.info("TarInputStream closed");
-          } 
+          }
           catch (IOException e) {
             e.printStackTrace();
             log.error("unable to close TarInputStream");
