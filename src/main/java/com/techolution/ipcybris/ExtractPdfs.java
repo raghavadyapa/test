@@ -97,240 +97,240 @@ import org.slf4j.LoggerFactory;
  */
 public class ExtractPdfs {
 
-    /** The logger to output status messages to. */
+  /** The logger to output status messages to. */
 //    private static final Logger LOG = LoggerFactory.getLogger(UnzipParent.class);
 
-    /**
-     * A list of the {@link Compression} values excluding {@link Compression#AUTO} and {@link
-     * Compression#UNCOMPRESSED}.
-     */
-    @VisibleForTesting
-    static final Set<Compression> SUPPORTED_COMPRESSIONS =
-            Stream.of(Compression.values())
-                    .filter(value -> value != Compression.AUTO && value != Compression.UNCOMPRESSED)
-                    .collect(Collectors.toSet());
+  /**
+   * A list of the {@link Compression} values excluding {@link Compression#AUTO} and {@link
+   * Compression#UNCOMPRESSED}.
+   */
+  @VisibleForTesting
+  static final Set<Compression> SUPPORTED_COMPRESSIONS =
+          Stream.of(Compression.values())
+                  .filter(value -> value != Compression.AUTO && value != Compression.UNCOMPRESSED)
+                  .collect(Collectors.toSet());
 
-    /** The error msg given when the pipeline matches a file but cannot determine the compression. */
-    @VisibleForTesting
-    static final String UNCOMPRESSED_ERROR_MSG =
-            "Skipping file %s because it did not match any compression mode (%s)";
+  /** The error msg given when the pipeline matches a file but cannot determine the compression. */
+  @VisibleForTesting
+  static final String UNCOMPRESSED_ERROR_MSG =
+          "Skipping file %s because it did not match any compression mode (%s)";
 
-    @VisibleForTesting
-    static final String MALFORMED_ERROR_MSG =
-            "The file resource %s is malformed or not in %s compressed format.";
+  @VisibleForTesting
+  static final String MALFORMED_ERROR_MSG =
+          "The file resource %s is malformed or not in %s compressed format.";
 
-    /** The tag used to identify the main output of the {@link Decompress} DoFn. */
-    @VisibleForTesting
-    static final TupleTag<String> DECOMPRESS_MAIN_OUT_TAG = new TupleTag<String>() {};
+  /** The tag used to identify the main output of the {@link Decompress} DoFn. */
+  @VisibleForTesting
+  static final TupleTag<String> DECOMPRESS_MAIN_OUT_TAG = new TupleTag<String>() {};
 
-    /** The tag used to identify the dead-letter sideOutput of the {@link Decompress} DoFn. */
-    @VisibleForTesting
-    static final TupleTag<KV<String, String>> DEADLETTER_TAG = new TupleTag<KV<String, String>>() {};
+  /** The tag used to identify the dead-letter sideOutput of the {@link Decompress} DoFn. */
+  @VisibleForTesting
+  static final TupleTag<KV<String, String>> DEADLETTER_TAG = new TupleTag<KV<String, String>>() {};
 
-    /**
-     * The {@link Options} class provides the custom execution options passed by the executor at the
-     * command-line.
-     */
-    public interface Options extends PipelineOptions {
-        @Description("The input file pattern to read from (e.g. gs://bucket-name/compressed/*.gz)")
-        @Validation.Required
-        ValueProvider<String> getInputFilePattern();
+  /**
+   * The {@link Options} class provides the custom execution options passed by the executor at the
+   * command-line.
+   */
+  public interface Options extends PipelineOptions {
+    @Description("The input file pattern to read from (e.g. gs://bucket-name/compressed/*.gz)")
+    @Validation.Required
+    ValueProvider<String> getInputFilePattern();
 
-        void setInputFilePattern(ValueProvider<String> value);
+    void setInputFilePattern(ValueProvider<String> value);
 
-        @Description("The output location to write to (e.g. gs://bucket-name/decompressed)")
-        @Validation.Required
-        ValueProvider<String> getOutputDirectory();
+    @Description("The output location to write to (e.g. gs://bucket-name/decompressed)")
+    @Validation.Required
+    ValueProvider<String> getOutputDirectory();
 
-        void setOutputDirectory(ValueProvider<String> value);
+    void setOutputDirectory(ValueProvider<String> value);
 
+  }
+
+  /**
+   * The main entry-point for pipeline execution. This method will start the pipeline but will not
+   * wait for it's execution to finish. If blocking execution is required, use the {@link
+   * BulkDecompressor#run(Options)} method to start the pipeline and invoke {@code
+   * result.waitUntilFinish()} on the {@link PipelineResult}.
+   *
+   * @param args The command-line args passed by the executor.
+   */
+  public static void main(String[] args) {
+
+    Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
+
+    run(options);
+  }
+
+  /**
+   * Runs the pipeline to completion with the specified options. This method does not wait until the
+   * pipeline is finished before returning. Invoke {@code result.waitUntilFinish()} on the result
+   * object to block until the pipeline is finished running if blocking programmatic execution is
+   * required.
+   *
+   * @param options The execution options.
+   * @return The pipeline result.
+   */
+  public static PipelineResult run(Options options) {
+
+    // Create the pipeline
+    Pipeline pipeline = Pipeline.create(options);
+
+    // Run the pipeline over the work items.
+    PCollection<PubsubMessage> errorMsg =  pipeline.apply("MatchFile(s)", FileIO.match().filepattern(options.getInputFilePattern()))
+            .apply("DecompressFile(s)", ParDo.of(new DecompressNew(options.getOutputDirectory())));
+
+    errorMsg.apply("Write PubSub Events", PubsubIO.writeMessages().to("projects/ipweb-240115/topics/ipweb-dinesh-error"));
+
+
+    PipelineResult result =  pipeline.run();
+    try {
+      result.waitUntilFinish();
+    } catch (Exception exc) {
+      System.out.println(exc.getCause());
+    }
+    return  result;
+  }
+
+  /**
+   * Performs the decompression of an object on Google Cloud Storage and uploads the decompressed
+   * object back to a specified destination location.
+   */
+  @SuppressWarnings("serial")
+  public static class DecompressNew extends DoFn<MatchResult.Metadata,PubsubMessage> {
+    private static final long serialVersionUID = 2015166770614756341L;
+    private static final Logger log=LoggerFactory.getLogger(ExtractPdfs.class);
+    private long filesUnzipped=0;
+
+    private final ValueProvider<String> destinationLocation;
+
+    DecompressNew(ValueProvider<String> destinationLocation) {
+      this.destinationLocation = destinationLocation;
     }
 
-    /**
-     * The main entry-point for pipeline execution. This method will start the pipeline but will not
-     * wait for it's execution to finish. If blocking execution is required, use the {@link
-     * BulkDecompressor#run(Options)} method to start the pipeline and invoke {@code
-     * result.waitUntilFinish()} on the {@link PipelineResult}.
-     *
-     * @param args The command-line args passed by the executor.
-     */
-    public static void main(String[] args) {
-
-        Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
-
-        run(options);
-    }
-
-    /**
-     * Runs the pipeline to completion with the specified options. This method does not wait until the
-     * pipeline is finished before returning. Invoke {@code result.waitUntilFinish()} on the result
-     * object to block until the pipeline is finished running if blocking programmatic execution is
-     * required.
-     *
-     * @param options The execution options.
-     * @return The pipeline result.
-     */
-    public static PipelineResult run(Options options) {
-
-        // Create the pipeline
-        Pipeline pipeline = Pipeline.create(options);
-
-        // Run the pipeline over the work items.
-        PCollection<PubsubMessage> errorMsg =  pipeline.apply("MatchFile(s)", FileIO.match().filepattern(options.getInputFilePattern()))
-                .apply("DecompressFile(s)", ParDo.of(new DecompressNew(options.getOutputDirectory())));
-
-        errorMsg.apply("Write PubSub Events", PubsubIO.writeMessages().to("projects/ipweb-240115 /topics/ipweb-dinesh-error"));
-
-
-        PipelineResult result =  pipeline.run();
-        try {
-            result.waitUntilFinish();
-        } catch (Exception exc) {
-            System.out.println(exc.getCause());
-        }
-        return  result;
-    }
-
-    /**
-     * Performs the decompression of an object on Google Cloud Storage and uploads the decompressed
-     * object back to a specified destination location.
-     */
-    @SuppressWarnings("serial")
-    public static class DecompressNew extends DoFn<MatchResult.Metadata,PubsubMessage> {
-        private static final long serialVersionUID = 2015166770614756341L;
-        private static final Logger log=LoggerFactory.getLogger(ExtractPdfs.class);
-        private long filesUnzipped=0;
-
-        private final ValueProvider<String> destinationLocation;
-
-        DecompressNew(ValueProvider<String> destinationLocation) {
-            this.destinationLocation = destinationLocation;
-        }
-
-        @ProcessElement
-        public void processElement(ProcessContext c){
-            ResourceId p = c.element().resourceId();
-            GcsUtil.GcsUtilFactory factory = new GcsUtil.GcsUtilFactory();
-            GcsUtil u = factory.create(c.getPipelineOptions());
-            String desPath = "";
-            String randomStr = getRandomString(10);
-            byte[] buffer = new byte[100000000];
-            try{
-                SeekableByteChannel sek = u.open(GcsPath.fromUri(p.toString()));
-                String ext = FilenameUtils.getExtension(p.toString());
-                int count = 0;
-                if (ext.equalsIgnoreCase("zip") ) {
-                    log.info("decompressing "+p.toString());
-                    desPath = this.destinationLocation.get()+ randomStr +"-unzip/";
-                    InputStream is;
-                    is = Channels.newInputStream(sek);
-                    BufferedInputStream bis = new BufferedInputStream(is);
-                    ZipInputStream zis = new ZipInputStream(bis);
-                    ZipEntry ze = zis.getNextEntry();
-                    while(ze!=null){
-                        if(ze.getName().toLowerCase().contains(".pdf")) {
-                            String tn = ze.getName();
-                            try {
-                                log.info("extracting " + ze.getName());
-                                String[] tna = tn.split("/");
-                                String pdf_name = tna[tna.length - 1];
-                                WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(ze.getName()));
-                                log.info("writing to GCS");
-                                OutputStream os = Channels.newOutputStream(wri);
-                                int len;
-                                while ((len = zis.read(buffer)) > 0) {
-                                    os.write(buffer, 0, len);
-                                }
-                                os.close();
-                                log.info("unzipped " + ze.getName());
-                                filesUnzipped++;
-                                log.info("unzipped count" + filesUnzipped);
-                            } catch (Exception e) {
-                                HashMap<String,String>  meta = new HashMap<String,String>();
-                                PubsubMessage pubsubMessage = new PubsubMessage(tn.getBytes(), meta);
-                                c.output(pubsubMessage);
-                                log.error(e.getMessage());
-                            }
-                        }
-                        ze = zis.getNextEntry();
-                    }
-                    zis.closeEntry();
-                    zis.close();
-                } else if(ext.equalsIgnoreCase("tar")) {
-                    log.info("decompressing "+p.toString());
-                    desPath = this.destinationLocation.get()+ randomStr + "-untar/";
-                    InputStream is;
-                    is = Channels.newInputStream(sek);
-                    BufferedInputStream bis = new BufferedInputStream(is);
-                    TarArchiveInputStream tis = new TarArchiveInputStream(bis);
-                    TarArchiveEntry te = tis.getNextTarEntry();
-                    while(te!=null){
-
-                        if(te.getName().toLowerCase().contains(".pdf")) {
-                            log.info("extracting "+te.getName());
-                            String tn = te.getName();
-                            try {
-                                String[] tna = tn.split("/");
-                                String pdf_name = tna[tna.length - 1];
-                                WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(te.getName()));
-                                log.info("writing to GCS");
-                                OutputStream os = Channels.newOutputStream(wri);
-                                int len;
-                                while ((len = tis.read(buffer)) > 0) {
-                                    os.write(buffer, 0, len);
-                                }
-                                os.close();
-                                log.info("unzipped " + te.getName());
-                                filesUnzipped++;
-                                log.info("unzipped count " + filesUnzipped);
-                            } catch(Exception e) {
-                                HashMap<String,String>  meta = new HashMap<String,String>();
-                                PubsubMessage pubsubMessage = new PubsubMessage(tn.getBytes(), meta);
-                                c.output(pubsubMessage);
-                                log.error(e.getMessage());
-                            }
-                        }
-                        te=tis.getNextTarEntry();
-                    }
-                    tis.close();
+    @ProcessElement
+    public void processElement(ProcessContext c){
+      ResourceId p = c.element().resourceId();
+      GcsUtil.GcsUtilFactory factory = new GcsUtil.GcsUtilFactory();
+      GcsUtil u = factory.create(c.getPipelineOptions());
+      String desPath = "";
+      String randomStr = getRandomString(10);
+      byte[] buffer = new byte[100000000];
+      try{
+        SeekableByteChannel sek = u.open(GcsPath.fromUri(p.toString()));
+        String ext = FilenameUtils.getExtension(p.toString());
+        int count = 0;
+        if (ext.equalsIgnoreCase("zip") ) {
+          log.info("decompressing "+p.toString());
+          desPath = this.destinationLocation.get()+ randomStr +"-unzip/";
+          InputStream is;
+          is = Channels.newInputStream(sek);
+          BufferedInputStream bis = new BufferedInputStream(is);
+          ZipInputStream zis = new ZipInputStream(bis);
+          ZipEntry ze = zis.getNextEntry();
+          while(ze!=null){
+            if(ze.getName().toLowerCase().contains(".pdf")) {
+              String tn = ze.getName();
+              try {
+                log.info("extracting " + ze.getName());
+                String[] tna = tn.split("/");
+                String pdf_name = tna[tna.length - 1];
+                WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(ze.getName()));
+                log.info("writing to GCS");
+                OutputStream os = Channels.newOutputStream(wri);
+                int len;
+                while ((len = zis.read(buffer)) > 0) {
+                  os.write(buffer, 0, len);
                 }
-            }
-            catch(Exception e){
-
-                PubsubMessage pubsubMessage = new PubsubMessage(e.getMessage().getBytes(), new HashMap<>());
+                os.close();
+                log.info("unzipped " + ze.getName());
+                filesUnzipped++;
+                log.info("unzipped count" + filesUnzipped);
+              } catch (Exception e) {
+                HashMap<String,String>  meta = new HashMap<String,String>();
+                PubsubMessage pubsubMessage = new PubsubMessage(tn.getBytes(), meta);
                 c.output(pubsubMessage);
-                e.printStackTrace();
-                System.out.println(e);
-                log.error("Error:",e);
+                log.error(e.getMessage());
+              }
             }
+            ze = zis.getNextEntry();
+          }
+          zis.closeEntry();
+          zis.close();
+        } else if(ext.equalsIgnoreCase("tar")) {
+          log.info("decompressing "+p.toString());
+          desPath = this.destinationLocation.get()+ randomStr + "-untar/";
+          InputStream is;
+          is = Channels.newInputStream(sek);
+          BufferedInputStream bis = new BufferedInputStream(is);
+          TarArchiveInputStream tis = new TarArchiveInputStream(bis);
+          TarArchiveEntry te = tis.getNextTarEntry();
+          while(te!=null){
 
+            if(te.getName().toLowerCase().contains(".pdf")) {
+              log.info("extracting "+te.getName());
+              String tn = te.getName();
+              try {
+                String[] tna = tn.split("/");
+                String pdf_name = tna[tna.length - 1];
+                WritableByteChannel wri = u.create(GcsPath.fromUri(this.destinationLocation.get() + pdf_name), getType(te.getName()));
+                log.info("writing to GCS");
+                OutputStream os = Channels.newOutputStream(wri);
+                int len;
+                while ((len = tis.read(buffer)) > 0) {
+                  os.write(buffer, 0, len);
+                }
+                os.close();
+                log.info("unzipped " + te.getName());
+                filesUnzipped++;
+                log.info("unzipped count " + filesUnzipped);
+              } catch(Exception e) {
+                HashMap<String,String>  meta = new HashMap<String,String>();
+                PubsubMessage pubsubMessage = new PubsubMessage(tn.getBytes(), meta);
+                c.output(pubsubMessage);
+                log.error(e.getMessage());
+              }
+            }
+            te=tis.getNextTarEntry();
+          }
+          tis.close();
         }
+      }
+      catch(Exception e){
 
-        private String getType(String fName){
-            if(fName.endsWith(".zip")){
-                return "application/x-zip-compressed";
-            } else if(fName.endsWith(".tar")){
-                return "application/x-tar";
-            } else if(fName.endsWith(".pdf")){
-                return "application/pdf";
-            }
-            else {
-                return "text/plain";
-            }
-        }
+        PubsubMessage pubsubMessage = new PubsubMessage(e.getMessage().getBytes(), new HashMap<>());
+        c.output(pubsubMessage);
+        e.printStackTrace();
+        System.out.println(e);
+        log.error("Error:",e);
+      }
 
-        public static String getRandomString(int length) {
-            char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRST".toCharArray();
-
-            StringBuilder sb = new StringBuilder();
-            Random random = new Random();
-            for (int i = 0; i < length; i++) {
-                char c = chars[random.nextInt(chars.length)];
-                sb.append(c);
-            }
-            String randomStr = sb.toString();
-
-            return randomStr;
-        }
     }
+
+    private String getType(String fName){
+      if(fName.endsWith(".zip")){
+        return "application/x-zip-compressed";
+      } else if(fName.endsWith(".tar")){
+        return "application/x-tar";
+      } else if(fName.endsWith(".pdf")){
+        return "application/pdf";
+      }
+      else {
+        return "text/plain";
+      }
+    }
+
+    public static String getRandomString(int length) {
+      char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRST".toCharArray();
+
+      StringBuilder sb = new StringBuilder();
+      Random random = new Random();
+      for (int i = 0; i < length; i++) {
+        char c = chars[random.nextInt(chars.length)];
+        sb.append(c);
+      }
+      String randomStr = sb.toString();
+
+      return randomStr;
+    }
+  }
 }
