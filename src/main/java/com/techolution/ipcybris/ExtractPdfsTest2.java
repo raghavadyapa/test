@@ -261,16 +261,16 @@ public class ExtractPdfsTest2 {
             log.error("Error while reading " + ze.getName());
           }
           ze = zis.getNextEntry();
-
-          try {
-            zis.closeEntry();
-            zis.close();
-            log.info("ZipInputStream closed");
-          } catch (IOException e) {
-            e.printStackTrace();
-            log.error("unable to close ZipInputStream");
           }
+        try {
+          zis.closeEntry();
+          zis.close();
+          log.info("ZipInputStream closed");
+        } catch (IOException e) {
+          e.printStackTrace();
+          log.error("unable to close ZipInputStream");
         }
+
       } else if (ext.equalsIgnoreCase("tar")) {
         log.info("decompressing " + p.toString());
         desPath = this.destinationLocation.get() + randomStr + "-untar/";
@@ -314,15 +314,14 @@ public class ExtractPdfsTest2 {
             log.error("Error while reading " + te.getName());
           }
           te = tis.getNextTarEntry();
+        }
 
-
-          try {
-            tis.close();
-            log.info("TarInputStream closed");
-          } catch (IOException e) {
-            e.printStackTrace();
-            log.error("unable to close TarInputStream");
-          }
+        try {
+          tis.close();
+          log.info("TarInputStream closed");
+        } catch (IOException e) {
+          e.printStackTrace();
+          log.error("unable to close TarInputStream");
         }
       }
 
