@@ -228,7 +228,7 @@ public class ExtractPdfsTest2 {
         try {
           ze=zis.getNextEntry();
           log.info("zip entry created"+ze.getName());
-          
+
         } catch (IOException e) {
           e.printStackTrace();
           log.error("error creating zip entry:",e);
@@ -251,14 +251,13 @@ public class ExtractPdfsTest2 {
               os.close();
               wri.close();
               log.info("unzipped " + ze.getName());
+              filesUnzipped++;
+              log.info("unzipped count" + filesUnzipped);
             }
           } catch (Exception e) {
             e.printStackTrace();
             log.error("Error while reading " + ze.getName());
-          }
-
-          filesUnzipped++;
-          log.info("unzipped count" + filesUnzipped);
+          }          
           ze = zis.getNextEntry();
         }
         try {
