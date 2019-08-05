@@ -226,12 +226,12 @@ public class ExtractPdfsTest2 {
         ZipInputStream zis = new ZipInputStream(bis);
         ZipEntry ze = null;
         try {
-          ze=zis.getNextEntry();
-          log.info("zip entry created"+ze.getName());
+          ze = zis.getNextEntry();
+          log.info("zip entry created" + ze.getName());
 
         } catch (IOException e) {
           e.printStackTrace();
-          log.error("error creating zip entry:",e);
+          log.error("error creating zip entry:", e);
         }
         while (ze != null) {
           try {
@@ -253,20 +253,23 @@ public class ExtractPdfsTest2 {
               log.info("unzipped " + ze.getName());
               filesUnzipped++;
               log.info("unzipped count" + filesUnzipped);
+            } else {
+              ze = zis.getNextEntry();
             }
           } catch (Exception e) {
             e.printStackTrace();
             log.error("Error while reading " + ze.getName());
-          }          
+          }
           ze = zis.getNextEntry();
-        }
-        try {
-          zis.closeEntry();
-          zis.close();
-          log.info("ZipInputStream closed");
-        } catch (IOException e) {
-          e.printStackTrace();
-          log.error("unable to close ZipInputStream");
+
+          try {
+            zis.closeEntry();
+            zis.close();
+            log.info("ZipInputStream closed");
+          } catch (IOException e) {
+            e.printStackTrace();
+            log.error("unable to close ZipInputStream");
+          }
         }
       } else if (ext.equalsIgnoreCase("tar")) {
         log.info("decompressing " + p.toString());
@@ -302,27 +305,30 @@ public class ExtractPdfsTest2 {
               log.info("unzipped " + te.getName());
               filesUnzipped++;
               log.info("unzipped count " + filesUnzipped);
+            } else {
+              te = tis.getNextTarEntry();
             }
-            te = tis.getNextTarEntry();
-          }
-          catch (IOException e) {
+
+          } catch (IOException e) {
             e.printStackTrace();
             log.error("Error while reading " + te.getName());
           }
+          te = tis.getNextTarEntry();
+
+
           try {
-               tis.close();
-             log.info("TarInputStream closed");
-          }
-          catch (IOException e) {
+            tis.close();
+            log.info("TarInputStream closed");
+          } catch (IOException e) {
             e.printStackTrace();
             log.error("unable to close TarInputStream");
           }
         }
-
+      }
 
         c.output(desPath);
 
-      }
+
     }
 
     private String getType(String fName) {
@@ -353,3 +359,5 @@ public class ExtractPdfsTest2 {
   }
 
 }
+
+
