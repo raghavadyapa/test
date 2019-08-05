@@ -230,6 +230,7 @@ public class UnzipParent2 {
         BufferedInputStream bis = new BufferedInputStream(is);
         ZipInputStream zis = new ZipInputStream(bis);
         ZipEntry ze = null;
+        log.info("Zip input stream is created");
         try {
           ze = zis.getNextEntry();
           log.info("Next zip entry is :"+ze);
@@ -275,6 +276,7 @@ public class UnzipParent2 {
         BufferedInputStream bis = new BufferedInputStream(is);
         TarArchiveInputStream tis = new TarArchiveInputStream(bis);
         TarArchiveEntry te = null;
+        log.info("Tar input stream is created");
         try {
           te = tis.getNextTarEntry();
           log.info("Next Tar entry is :"+te);
